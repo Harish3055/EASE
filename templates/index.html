@@ -4,25 +4,71 @@
     <title>Detect Barcode</title>
     <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <style>
+      body{
+        overflow: hidden; 
+      }
+      @media screen and (min-width: 1079px) {
+        #myVideo {
+          height: 550px;
+        }
+        #stop {
+          width: 65px;
+          height: 65px;
+          content: url("/static/cam.png");
+        }
+        .topMargin{
+          margin-top:1%;
+        }
+      }
+      @media screen and (max-width:1000px){
+        #myVideo {
+          height: 1400px;
+        }
+        #stop {
+          width: 200px;
+          height: 200px;
+          content: url("/static/cam.png");
+        }
+        .topMargin{
+          margin-top:5%;
+        }
+      }
+      }
+    </style>
 </head>
 <body class="bg-dark">
-<div class='container d-flex justify-content-center' style="margin-top:5%;">
-  <video style="height:1400px;" id="myVideo" autoplay></video>
-</div>
-<div class="container bg-white text-center py-2" action="/image" method = "GET">
-  <p style="font-size:30px;">{{text}}</p>
+<div class='container d-flex justify-content-center topMargin'>
+  <video  id="myVideo" autoplay></video>
 </div>
 
 <br>
+  
 <div class='container d-flex justify-content-center'>
-<img  onclick="sendImagefromCanvas()" src ="/static/cam.png" style="width:200px;height:200px;" id='stop'/>
-
+  <img  onclick="sendImagefromCanvas()" id='stop'/>
 </div>
 <br>
+  <div class="modal fade model-sm-lg" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">Result</h5>
+        <button type="button" class="btn btn-danger close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <h1 id="result"></h1>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger btn-large" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
-    console.log('{{text}}');
     let v = document.getElementById("myVideo");
     let btn = document.getElementById("btn");
     let imageCanvas = document.createElement('canvas');
@@ -35,22 +81,35 @@
         let xhr = new XMLHttpRequest();
         xhr.open('POST', '/image', true);
         xhr.onload = function () {
-            if (this.status === 200)
-                console.log(this.response);
-            else
+            if (this.status === 200){
+
+              if(this.response!='"Error"\n'){
+              document.getElementById('result').innerHTML = this.response;
+                $('#exampleModalCenter').modal('show');
+              }
+              else{
+                document.getElementById('result').innerHTML = "No QR's Found:)";
+                $('#exampleModalCenter').modal('show');
+              }
+            }
+            else 
                 console.error(xhr);
+                
         };
         xhr.send(formdata);
+        v.play();
     }
     function sendImagefromCanvas() {
         imageCanvas.width = v.videoWidth;
         imageCanvas.height = v.videoHeight;
         imageCtx.drawImage(v, 0, 0, v.videoWidth, v.videoHeight);
+        v.pause();
         imageCanvas.toBlob(postFile, 'image/jpeg');
+        v.currentTime = 0;
     }
-
-  const  capture= function (camPosition) {
-        navigator.mediaDevices.getUserMedia({video: {width: 1280, height: 720,facingMode: { exact: 'environment' }}, audio: false})
+  
+  const  capture= function (camPosition,mode) {
+        navigator.mediaDevices.getUserMedia({video: {width: 1280, height: 720,facingMode: { exact: mode }}, audio: false})
             .then(stream => {
                 window.localStream = stream;
                 v.srcObject = stream;
@@ -60,13 +119,15 @@
             });
           
     };
-    
+   
     window.onload = function(){
-      capture(campos);
+      console.log(screen.height);
+        if(screen.width>1400)
+        capture(campos,'user');
+        else
+        capture(campos,'environment')
     }; 
-  //   $( "#stop" ).click(function() {
-  //     localStream.getVideoTracks()[0].stop();
-  // });
+ 
  </script>
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
